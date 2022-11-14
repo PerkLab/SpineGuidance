@@ -319,12 +319,13 @@ class SpineGuidanceStudyModuleWidget(ScriptedLoadableModuleWidget, VTKObservatio
         self.logic.updateTransformFromParameterNode()
 
     def onInButton(self):
-        # Add 1 to Anterior Translation
-        currentTa = float(self._parameterNode.GetParameter(self.logic.TRANSLATE_I))
-        self._parameterNode.SetParameter(self.logic.TRANSLATE_I, str(currentTa + 1))
+        # Add 1 unit along need length to TRANSLATE R,A,S
+        currentTI = float(self._parameterNode.GetParameter(self.logic.TRANSLATE_I))
+        self._parameterNode.SetParameter(self.logic.TRANSLATE_I, str(currentTI + 1))
         self.updateGUIFromParameterNode()
         self.logic.updateTransformFromParameterNode()
-        # self.logic.moveInOut()
+        self.logic.moveNeedleIn(5)
+
   
     def onOutButton(self):
         # Subtract 1 from Anterior Translation
@@ -332,7 +333,7 @@ class SpineGuidanceStudyModuleWidget(ScriptedLoadableModuleWidget, VTKObservatio
         self._parameterNode.SetParameter(self.logic.TRANSLATE_I, str(currentTa - 1))
         self.updateGUIFromParameterNode()
         # self.logic.updateTransformFromParameterNode()
-        # self.logic.moveInOut()
+        self.logic.moveNeedleIn(-5)
  
     def onInOutSlider(self):
         self.updateParameterNodeFromGUI()
@@ -452,38 +453,25 @@ class SpineGuidanceStudyModuleLogic(ScriptedLoadableModuleLogic):
         needleToRasTransform = vtk.vtkTransform()
 
         '''Update Translate R, A, S using Translate I'''
-        TranslateI_RAS = self.getI_InTermsOf_RAS()
+        # TranslateI_RAS = self.getI_InTermsOf_RAS() # This is part of the problem
 
         # apply the translation and rotation in the world frame: TRANSLATE_R, TRANSLATE_S, ROTATE_R, ROTATE_S
-        needleToRasTransform.Translate(float(parameterNode.GetParameter(self.TRANSLATE_R)) + TranslateI_RAS[0],
-                                        float(parameterNode.GetParameter(self.TRANSLATE_A)) + TranslateI_RAS[1],
-                                        float(parameterNode.GetParameter(self.TRANSLATE_S)) + TranslateI_RAS[2])                       
+        # needleToRasTransform.Translate(float(parameterNode.GetParameter(self.TRANSLATE_R)) + TranslateI_RAS[0],
+        #                                 float(parameterNode.GetParameter(self.TRANSLATE_A)) + TranslateI_RAS[1],
+        #                                 float(parameterNode.GetParameter(self.TRANSLATE_S)) + TranslateI_RAS[2])
+        needleToRasTransform.Translate(float(parameterNode.GetParameter(self.TRANSLATE_R)),
+                                        float(parameterNode.GetParameter(self.TRANSLATE_A)),
+                                        float(parameterNode.GetParameter(self.TRANSLATE_S)))                        
         needleToRasTransform.RotateX(float(parameterNode.GetParameter(self.ROTATE_R)))
         needleToRasTransform.RotateY(float(parameterNode.GetParameter(self.ROTATE_S)))
-        ''' Attempt to implement translation along the needle axis'''
-        # apply TRANSLATE_I in the needle frame
-                
-
+        # translate using Translate I
+        # needleToRasTransform.Translate(0, 0, float(parameterNode.GetParameter(self.TRANSLATE_I)))
         # Set the transform to the transform node
         needleToRasTransformNode.SetAndObserveTransformToParent(needleToRasTransform)
 
     # Returns the Translate I in terms of RAS
     def getI_InTermsOf_RAS(self):
         ''' Attempt to implement translation along the needle axis'''
-        # # Get the parameter node
-        # parameterNode = self.getParameterNode()
-        # # Get the transform node from the parameter node
-        # needleToRasTransformNode = parameterNode.GetNodeReference(self.NEEDLE_TO_RAS_TRANSFORM)
-        # # Get the transform from the transform node
-        # needleToRasTransform = needleToRasTransformNode.GetTransformToParent()
-        # RasToNeedleTransform = needleToRasTransformNode.GetTransformFromParent()
-        # # multiply the transform by a translation matrix
-        # newTransform = vtk.vtkTransform()
-
-        # # Transform a vector from the needle frame to the world frame
-        # needleTip = [0, 0, 0]
-        # needleTip = RasToNeedleTransform.TransformPoint(needleTip)
-        # print('NeedleTip:',needleTip)
 
         # Get the parameter node
         parameterNode = self.getParameterNode()
@@ -493,7 +481,7 @@ class SpineGuidanceStudyModuleLogic(ScriptedLoadableModuleLogic):
         needleToRasTransform = needleToRasTransformNode.GetTransformToParent()
         # Get TRANSLATION_I from the parameter node
         translateI = float(parameterNode.GetParameter(self.TRANSLATE_I))
-        Translation_Needle = [ 0, 0,translateI]
+        Translation_Needle = [ 0, 0, translateI]
         print('Translation_Needle:',Translation_Needle)
         # Rotate Translation_Needle to the parent frame
         Translation_RAS = needleToRasTransform.TransformVector(Translation_Needle)
@@ -503,21 +491,26 @@ class SpineGuidanceStudyModuleLogic(ScriptedLoadableModuleLogic):
         translateR = float(parameterNode.GetParameter(self.TRANSLATE_R))
         translateA = float(parameterNode.GetParameter(self.TRANSLATE_A))
         translateS = float(parameterNode.GetParameter(self.TRANSLATE_S))
-
-        # # Add Translation_RAS to the current translation
-        # newTranslateR = translateR + Translation_RAS[0]
-        # newTranslateA = translateA + Translation_RAS[1]
-        # newTranslateS = translateS + Translation_RAS[2]
-
-        # # Set the new translation
-        # parameterNode.SetParameter(self.TRANSLATE_R, str(newTranslateR))
-        # parameterNode.SetParameter(self.TRANSLATE_A, str(newTranslateA))
-        # parameterNode.SetParameter(self.TRANSLATE_S, str(newTranslateS))
         return Translation_RAS
 
 
-
-
+    def moveNeedleIn(self, distance):
+        # Get the parameter node
+        parameterNode = self.getParameterNode()
+        # Get the transform node from the parameter node
+        needleToRasTransformNode = parameterNode.GetNodeReference(self.NEEDLE_TO_RAS_TRANSFORM)
+        # Get the transform from the transform node
+        needleToRasTransform = needleToRasTransformNode.GetTransformToParent()
+        # Find distance in terms of R and S
+        Translation_Needle = [ 0, 0, distance]
+        # Rotate Translation_Needle to the parent frame
+        Translation_RAS = needleToRasTransform.TransformVector(Translation_Needle)   
+        # Add Translation_RAS to the current translation
+        parameterNode.SetParameter(self.TRANSLATE_R, str(float(parameterNode.GetParameter(self.TRANSLATE_R)) + Translation_RAS[0]))
+        parameterNode.SetParameter(self.TRANSLATE_A, str(float(parameterNode.GetParameter(self.TRANSLATE_A)) + Translation_RAS[1]))
+        parameterNode.SetParameter(self.TRANSLATE_S, str(float(parameterNode.GetParameter(self.TRANSLATE_S)) + Translation_RAS[2]))
+        # Update transform from Parameter Node
+        self.updateTransformFromParameterNode()
         
 
 

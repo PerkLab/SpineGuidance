@@ -217,6 +217,9 @@ p, li { white-space: pre-wrap; }
       </item>
       <item row="3" column="0">
        <widget class="ctkSliderWidget" name="inOutSlider">
+        <property name="enabled">
+         <bool>false</bool>
+        </property>
         <property name="toolTip">
          <string>Set threshold value for computing the output image. Voxels that have intensities lower than this value will set to zero.</string>
         </property>
