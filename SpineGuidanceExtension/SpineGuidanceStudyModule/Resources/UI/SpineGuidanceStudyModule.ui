@@ -58,7 +58,7 @@ p, li { white-space: pre-wrap; }
          <string>Run the algorithm.</string>
         </property>
         <property name="text">
-         <string>Previous</string>
+         <string>Next</string>
         </property>
        </widget>
       </item>
@@ -121,7 +121,7 @@ p, li { white-space: pre-wrap; }
          <double>100.000000000000000</double>
         </property>
         <property name="value">
-         <double>0.000000000000000</double>
+         <double>-100.000000000000000</double>
         </property>
         <property name="tracking">
          <bool>true</bool>
@@ -153,13 +153,13 @@ p, li { white-space: pre-wrap; }
          <double>5.000000000000000</double>
         </property>
         <property name="minimum">
-         <double>-100.000000000000000</double>
+         <double>-600.000000000000000</double>
         </property>
         <property name="maximum">
-         <double>100.000000000000000</double>
+         <double>-180.000000000000000</double>
         </property>
         <property name="value">
-         <double>0.000000000000000</double>
+         <double>-500.000000000000000</double>
         </property>
        </widget>
       </item>
@@ -274,7 +274,7 @@ p, li { white-space: pre-wrap; }
          <double>-180.000000000000000</double>
         </property>
         <property name="maximum">
-         <double>180.000000000000000</double>
+         <double>0.000000000000000</double>
         </property>
         <property name="value">
          <double>0.000000000000000</double>
