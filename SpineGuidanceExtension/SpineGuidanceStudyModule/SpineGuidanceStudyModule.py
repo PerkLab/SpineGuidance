@@ -232,26 +232,14 @@ class SpineGuidanceStudyModuleWidget(ScriptedLoadableModuleWidget, VTKObservatio
             return
 
         bounds = np.zeros(6)
-        usVolume.GetBounds(bounds)  # This is in the volume's local coordinate system
-        boundMins = np.array([bounds[0], bounds[2], bounds[4], 1])
-        boundMaxs = np.array([bounds[1], bounds[3], bounds[5], 1])
-
-        # If the volume is transformed, apply the transformation on the bounding box too
-
-        volumeTransformNodeId = usVolume.GetTransformNodeID()
-        if volumeTransformNodeId is not None:
-            volumeTransformNode = slicer.mrmlScene.GetNodeByID(volumeTransformNodeId)
-            volumeTransformMatrix = vtk.vtkMatrix4x4()
-            volumeTransformNode.GetMatrixTransformToWorld(volumeTransformMatrix)
-            boundMins = volumeTransformMatrix.MultiplyPoint(boundMins)
-            boundMaxs = volumeTransformMatrix.MultiplyPoint(boundMaxs)
+        usVolume.GetRASBounds(bounds)
 
         # Update sliders to cover the volumem with extra margins
 
-        self.ui.leftRightSlider.minimum = boundMins[0] - self.logic.MOTION_MARGIN
-        self.ui.leftRightSlider.maximum = boundMaxs[0] + self.logic.MOTION_MARGIN
-        self.ui.upDownSlider.minimum = boundMins[1] - self.logic.MOTION_MARGIN
-        self.ui.upDownSlider.maximum = boundMaxs[1] + self.logic.MOTION_MARGIN
+        self.ui.leftRightSlider.minimum = bounds[0] - self.logic.MOTION_MARGIN
+        self.ui.leftRightSlider.maximum = bounds[1] + self.logic.MOTION_MARGIN
+        self.ui.upDownSlider.minimum = bounds[4] - self.logic.MOTION_MARGIN
+        self.ui.upDownSlider.maximum = bounds[5] + self.logic.MOTION_MARGIN
 
     def updateParameterNodeFromGUI(self, caller=None, event=None):
         """
