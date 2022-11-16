@@ -202,16 +202,14 @@ class SpineGuidanceStudyModuleWidget(ScriptedLoadableModuleWidget, VTKObservatio
         # Update widgets from parameter node
 
         currentUsVolume = self.ui.usVolumeComboBox.currentNode()
-        newUsVolume = self._parameterNode.GetNodeReference(self.logic.CURRENT_US_VOLUME)
-        if currentUsVolume != newUsVolume:
-            self.ui.usVolumeComboBox.setCurrentNode(newUsVolume)
-            self.updateWidgetsForCurrentVolume()
+        referencedVolume = self._parameterNode.GetNodeReference(self.logic.CURRENT_US_VOLUME)
+        if currentUsVolume != referencedVolume:
+            self.ui.usVolumeComboBox.setCurrentNode(referencedVolume)
 
         currentNeedleTransform = self.ui.needleTransformComboBox.currentNode()
-        newNeedleTransform = self._parameterNode.GetNodeReference(self.logic.NEEDLE_TO_RAS_TRANSFORM)
-        if currentNeedleTransform != newNeedleTransform:
-            self.ui.needleTransformComboBox.setCurrentNode(newNeedleTransform)
-            self.logic.updateTransformFromParameterNode()
+        referencedTransform = self._parameterNode.GetNodeReference(self.logic.NEEDLE_TO_RAS_TRANSFORM)
+        if currentNeedleTransform != referencedTransform:
+            self.ui.needleTransformComboBox.setCurrentNode(referencedTransform)
 
         # update the sliders from the parameter node
         self.ui.leftRightSlider.value = float(self._parameterNode.GetParameter(self.logic.TRANSLATE_R))
@@ -254,8 +252,6 @@ class SpineGuidanceStudyModuleWidget(ScriptedLoadableModuleWidget, VTKObservatio
         self.ui.leftRightSlider.maximum = boundMaxs[0] + self.logic.MOTION_MARGIN
         self.ui.upDownSlider.minimum = boundMins[1] - self.logic.MOTION_MARGIN
         self.ui.upDownSlider.maximum = boundMaxs[1] + self.logic.MOTION_MARGIN
-        self.ui.inOutSlider.minimum = boundMins[2] - self.logic.MOTION_MARGIN
-        self.ui.inOutSlider.maximum = boundMaxs[2] + self.logic.MOTION_MARGIN
 
     def updateParameterNodeFromGUI(self, caller=None, event=None):
         """
@@ -280,10 +276,15 @@ class SpineGuidanceStudyModuleWidget(ScriptedLoadableModuleWidget, VTKObservatio
         if self._parameterNode is None or self._updatingGUIFromParameterNode:
             return
 
+        previousReferencedNode = self._parameterNode.GetNodeReference(self.logic.CURRENT_US_VOLUME)
+
         if selectedNode is None:
             self._parameterNode.SetNodeReferenceID(self.logic.CURRENT_US_VOLUME, "")
         else:
             self._parameterNode.SetNodeReferenceID(self.logic.CURRENT_US_VOLUME, selectedNode.GetID())
+
+        if previousReferencedNode != selectedNode:
+            self.updateWidgetsForCurrentVolume()
 
     def onNeedleTransformSelected(self, selectedNode):
         if self._parameterNode is None or self._updatingGUIFromParameterNode:
@@ -293,6 +294,8 @@ class SpineGuidanceStudyModuleWidget(ScriptedLoadableModuleWidget, VTKObservatio
             self._parameterNode.SetNodeReferenceID(self.logic.NEEDLE_TO_RAS_TRANSFORM,"")
         else:
             self._parameterNode.SetNodeReferenceID(self.logic.NEEDLE_TO_RAS_TRANSFORM, selectedNode.GetID())
+
+        self.logic.updateTransformFromParameterNode()
 
     # Scene selection
     def onPreviousButton(self):
@@ -462,7 +465,10 @@ class SpineGuidanceStudyModuleLogic(ScriptedLoadableModuleLogic):
         # Set the transform to the transform node
 
         needleToRasTransformNode = parameterNode.GetNodeReference(self.NEEDLE_TO_RAS_TRANSFORM)
-        needleToRasTransformNode.SetAndObserveTransformToParent(needleToRasTransform)
+        if needleToRasTransformNode is not None:
+            needleToRasTransformNode.SetAndObserveTransformToParent(needleToRasTransform)
+        else:
+            logging.warning("Needle transform not selected yet")
 
     def moveNeedleIn(self, distance):
         # Get the parameter node
