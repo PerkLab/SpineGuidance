@@ -20,14 +20,13 @@ class SpineGuidanceStudyModule(ScriptedLoadableModule):
 
     def __init__(self, parent):
         ScriptedLoadableModule.__init__(self, parent)
-        self.parent.title = "SpineGuidanceStudyModule"  # TODO: make this more human readable by adding spaces
-        self.parent.categories = ["Examples"]  # TODO: set categories (folders where the module shows up in the module selector)
+        self.parent.title = "Spine guidance simulation study"
+        self.parent.categories = ["Ultrasound"]
         self.parent.dependencies = []  # TODO: add here list of module names that this module requires
         self.parent.contributors = ["David Morton (Perk Lab)"]
-        # TODO: update with short description of the module and a link to online module documentation
         self.parent.helpText = """
-        This is an example of scripted loadable module bundled in an extension.
-        See more information in <a href="https://github.com/organization/projectname#SpineGuidanceStudyModule">module documentation</a>.
+        This module facilitates simulated needle placement in the context of previously scanned images or volumes.
+        See more information in <a href="https://github.com/PerkLab/SpineGuidance">module documentation</a>.
         """
         # TODO: replace with organization, grant and thanks
         self.parent.acknowledgementText = """
@@ -74,6 +73,7 @@ class SpineGuidanceStudyModuleWidget(ScriptedLoadableModuleWidget, VTKObservatio
         # Create logic class. Logic implements all computations that should be possible to run
         # in batch mode, without a graphical user interface.
         self.logic = SpineGuidanceStudyModuleLogic()
+        self.logic.setupScene()
 
         # Connections
 
@@ -89,78 +89,40 @@ class SpineGuidanceStudyModuleWidget(ScriptedLoadableModuleWidget, VTKObservatio
         self.ui.previousButton.connect('clicked(bool)', self.onPreviousButton)
         self.ui.nextButton.connect('clicked(bool)', self.onNextButton)
 
+        self.ui.usVolumeComboBox.connect('currentNodeChanged(vtkMRMLNode*)', self.onUsVolumeSelected)
+        self.ui.needleTransformComboBox.connect('currentNodeChanged(vtkMRMLNode*)', self.onNeedleTransformSelected)
+
         # Translation
+
         self.ui.leftButton.connect('clicked(bool)', self.onLeftButton)
         self.ui.rightButton.connect('clicked(bool)', self.onRightButton)
-        self.ui.leftRightSlider.connect("valueChanged(double)", self.onLeftRightSlider)
         self.ui.upButton.connect('clicked(bool)', self.onUpButton)
         self.ui.downButton.connect('clicked(bool)', self.onDownButton)
-        self.ui.upDownSlider.connect("valueChanged(double)", self.onUpDownSlider)
         self.ui.inButton.connect('clicked(bool)', self.onInButton)
         self.ui.outButton.connect('clicked(bool)', self.onOutButton)
-        self.ui.inOutSlider.connect("valueChanged(double)", self.onInOutSlider)
+        self.ui.needleInLargeButton.connect('clicked(bool)', self.onInLargeButton)
+        self.ui.needleOutLargeButton.connect('clicked(bool)', self.onOutLargeButton)
 
         # Rotation
         self.ui.cranialRotationButton.connect('clicked(bool)', self.onCranialRotationButton)
         self.ui.caudalRotationButton.connect('clicked(bool)', self.onCaudalRotationButton)
-        self.ui.cranialRotationSlider.connect("valueChanged(double)", self.onCranialRotationSlider)
         self.ui.leftRotationButton.connect('clicked(bool)', self.onLeftRotationButton)
         self.ui.rightRotationButton.connect('clicked(bool)', self.onRightRotationButton)
-        self.ui.leftRotationSlider.connect("valueChanged(double)", self.onLeftRotationSlider)
 
+        # Slider changes
 
+        self.ui.leftRightSlider.connect("valueChanged(double)", self.updateParameterNodeFromGUI)
+        self.ui.upDownSlider.connect("valueChanged(double)", self.updateParameterNodeFromGUI)
+        self.ui.cranialRotationSlider.connect("valueChanged(double)", self.updateParameterNodeFromGUI)
+        self.ui.leftRotationSlider.connect("valueChanged(double)", self.updateParameterNodeFromGUI)
 
         # Make sure parameter node is initialized (needed for module reload)
+        self.initializeScene()  # Setup the scene
         self.initializeParameterNode()
-        # Setup the scene
-        self.initializeScene()
-        # 
+
 
     def initializeScene(self):
-        # NeedleToRasTransform
-
-        # If NeedleToRasTransform is not in the scene, create and add it
-        needleToRasTransform = slicer.util.getFirstNodeByName(self.logic.NEEDLE_TO_RAS_TRANSFORM) # ***
-        if needleToRasTransform is None:
-            needleToRasTransform = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLLinearTransformNode', self.logic.NEEDLE_TO_RAS_TRANSFORM)
-            # Add it to parameter node
-            self._parameterNode.SetNodeReferenceID(self.logic.NEEDLE_TO_RAS_TRANSFORM, needleToRasTransform.GetID())
-
-        # NeedleModel
-
-        # If NeedleModel is not in the scene, create and add it
-        needleModel = slicer.util.getFirstNodeByName(self.logic.NEEDLE_MODEL)
-        if needleModel is None:
-            createModelsLogic = slicer.modules.createmodels.logic()
-            # creates a needle model with 4 arguments: Length, radius, tip radius, and DepthMarkers
-            needleModel = createModelsLogic.CreateNeedle(80,1.0,2.5, 0)
-            needleModel.SetName(self.logic.NEEDLE_MODEL)
-            # Add it to parameter node
-            self._parameterNode.SetNodeReferenceID(self.logic.NEEDLE_MODEL, needleModel.GetID())
-        # If not already transformed, add it to the NeedleToRas transform
-        needleModelTransform = needleModel.GetParentTransformNode()
-        if needleModelTransform is None:
-            needleModel.SetAndObserveTransformNodeID(needleToRasTransform.GetID())
-
-        # NeedleTip pointlist
-    
-        # If pointList_NeedleTip is not in the scene, create and add it
-        pointList_NeedleTip = self._parameterNode.GetNodeReference(self.logic.NEEDLE_TIP)
-        if pointList_NeedleTip == None:
-            # Create a point list for the needle tip in reference coordinates
-            pointList_NeedleTip = slicer.vtkMRMLMarkupsFiducialNode()
-            pointList_NeedleTip.SetName("pointList_NeedleTip")
-            slicer.mrmlScene.AddNode(pointList_NeedleTip)
-            # Set the role of the point list
-            self._parameterNode.SetNodeReferenceID(self.logic.NEEDLE_TIP, pointList_NeedleTip.GetID())
-        # Add a point to the point list
-        if pointList_NeedleTip.GetNumberOfControlPoints() == 0:
-            pointList_NeedleTip.AddControlPoint(np.array([0, 0, 0]))
-            pointList_NeedleTip.SetNthControlPointLabel(0, "origin_Tip")
-        # If not already transformed, add it to the NeedleToRas transform
-        pointList_NeedleTipTransform = pointList_NeedleTip.GetParentTransformNode()
-        if pointList_NeedleTipTransform is None:
-            pointList_NeedleTip.SetAndObserveTransformNodeID(needleToRasTransform.GetID())
+        pass
         
     def cleanup(self):
         """
@@ -231,18 +193,29 @@ class SpineGuidanceStudyModuleWidget(ScriptedLoadableModuleWidget, VTKObservatio
         This method is called whenever parameter node is changed.
         The module GUI is updated to show the current state of the parameter node.
         """
-        self.initializeScene()
-
         if self._parameterNode is None or self._updatingGUIFromParameterNode:
             return
 
         # Make sure GUI changes do not call updateParameterNodeFromGUI (it could cause infinite loop)
         self._updatingGUIFromParameterNode = True
 
+        # Update widgets from parameter node
+
+        currentUsVolume = self.ui.usVolumeComboBox.currentNode()
+        newUsVolume = self._parameterNode.GetNodeReference(self.logic.CURRENT_US_VOLUME)
+        if currentUsVolume != newUsVolume:
+            self.ui.usVolumeComboBox.setCurrentNode(newUsVolume)
+            self.updateWidgetsForCurrentVolume()
+
+        currentNeedleTransform = self.ui.needleTransformComboBox.currentNode()
+        newNeedleTransform = self._parameterNode.GetNodeReference(self.logic.NEEDLE_TO_RAS_TRANSFORM)
+        if currentNeedleTransform != newNeedleTransform:
+            self.ui.needleTransformComboBox.setCurrentNode(newNeedleTransform)
+            self.logic.updateTransformFromParameterNode()
+
         # update the sliders from the parameter node
         self.ui.leftRightSlider.value = float(self._parameterNode.GetParameter(self.logic.TRANSLATE_R))
         self.ui.upDownSlider.value = float(self._parameterNode.GetParameter(self.logic.TRANSLATE_S))
-        self.ui.inOutSlider.value = float(self._parameterNode.GetParameter(self.logic.TRANSLATE_I))
         self.ui.cranialRotationSlider.value = float(self._parameterNode.GetParameter(self.logic.ROTATE_R))
         self.ui.leftRotationSlider.value = float(self._parameterNode.GetParameter(self.logic.ROTATE_S))
 
@@ -251,6 +224,38 @@ class SpineGuidanceStudyModuleWidget(ScriptedLoadableModuleWidget, VTKObservatio
 
         # All the GUI updates are done
         self._updatingGUIFromParameterNode = False
+
+    def updateWidgetsForCurrentVolume(self):
+        """
+        Update widget parameters that depend on the size and position of current volume.
+        """
+        usVolume = self._parameterNode.GetNodeReference(self.logic.CURRENT_US_VOLUME)
+        if usVolume is None:
+            return
+
+        bounds = np.zeros(6)
+        usVolume.GetBounds(bounds)  # This is in the volume's local coordinate system
+        boundMins = np.array([bounds[0], bounds[2], bounds[4], 1])
+        boundMaxs = np.array([bounds[1], bounds[3], bounds[5], 1])
+
+        # If the volume is transformed, apply the transformation on the bounding box too
+
+        volumeTransformNodeId = usVolume.GetTransformNodeID()
+        if volumeTransformNodeId is not None:
+            volumeTransformNode = slicer.mrmlScene.GetNodeByID(volumeTransformNodeId)
+            volumeTransformMatrix = vtk.vtkMatrix4x4()
+            volumeTransformNode.GetMatrixTransformToWorld(volumeTransformMatrix)
+            boundMins = volumeTransformMatrix.MultiplyPoint(boundMins)
+            boundMaxs = volumeTransformMatrix.MultiplyPoint(boundMaxs)
+
+        # Update sliders to cover the volumem with extra margins
+
+        self.ui.leftRightSlider.minimum = boundMins[0] - self.logic.MOTION_MARGIN
+        self.ui.leftRightSlider.maximum = boundMaxs[0] + self.logic.MOTION_MARGIN
+        self.ui.upDownSlider.minimum = boundMins[1] - self.logic.MOTION_MARGIN
+        self.ui.upDownSlider.maximum = boundMaxs[1] + self.logic.MOTION_MARGIN
+        self.ui.inOutSlider.minimum = boundMins[2] - self.logic.MOTION_MARGIN
+        self.ui.inOutSlider.maximum = boundMaxs[2] + self.logic.MOTION_MARGIN
 
     def updateParameterNodeFromGUI(self, caller=None, event=None):
         """
@@ -262,15 +267,32 @@ class SpineGuidanceStudyModuleWidget(ScriptedLoadableModuleWidget, VTKObservatio
             return
 
         wasModified = self._parameterNode.StartModify()  # Modify all properties in a single batch
-        
+
         self._parameterNode.SetParameter(self.logic.TRANSLATE_R, str(self.ui.leftRightSlider.value))
         self._parameterNode.SetParameter(self.logic.TRANSLATE_S, str(self.ui.upDownSlider.value))
-        self._parameterNode.SetParameter(self.logic.TRANSLATE_I, str(self.ui.inOutSlider.value))
         self._parameterNode.SetParameter(self.logic.ROTATE_R, str(self.ui.cranialRotationSlider.value))
         self._parameterNode.SetParameter(self.logic.ROTATE_S, str(self.ui.leftRotationSlider.value))
-
+        self.logic.updateTransformFromParameterNode()
 
         self._parameterNode.EndModify(wasModified)
+
+    def onUsVolumeSelected(self, selectedNode):
+        if self._parameterNode is None or self._updatingGUIFromParameterNode:
+            return
+
+        if selectedNode is None:
+            self._parameterNode.SetNodeReferenceID(self.logic.CURRENT_US_VOLUME, "")
+        else:
+            self._parameterNode.SetNodeReferenceID(self.logic.CURRENT_US_VOLUME, selectedNode.GetID())
+
+    def onNeedleTransformSelected(self, selectedNode):
+        if self._parameterNode is None or self._updatingGUIFromParameterNode:
+            return
+
+        if selectedNode is None:
+            self._parameterNode.SetNodeReferenceID(self.logic.NEEDLE_TO_RAS_TRANSFORM,"")
+        else:
+            self._parameterNode.SetNodeReferenceID(self.logic.NEEDLE_TO_RAS_TRANSFORM, selectedNode.GetID())
 
     # Scene selection
     def onPreviousButton(self):
@@ -283,107 +305,41 @@ class SpineGuidanceStudyModuleWidget(ScriptedLoadableModuleWidget, VTKObservatio
 
     # Tranlation
     def onRightButton(self):
-        # Add 1 to Right Translation
-        currentTr = float(self._parameterNode.GetParameter(self.logic.TRANSLATE_R))
-        self._parameterNode.SetParameter(self.logic.TRANSLATE_R, str(currentTr + 1))
-        self.updateGUIFromParameterNode()
-        self.logic.updateTransformFromParameterNode()
+        self.ui.leftRightSlider.value = self.ui.leftRightSlider.value + self.logic.STEP_SIZE_TRANSLATION
 
     def onLeftButton(self):
-        # Subtract 1 from Right Translation
-        currentTr = float(self._parameterNode.GetParameter(self.logic.TRANSLATE_R))
-        self._parameterNode.SetParameter(self.logic.TRANSLATE_R, str(currentTr - 1))
-        self.updateGUIFromParameterNode()
-        self.logic.updateTransformFromParameterNode()
-
-    def onLeftRightSlider(self):
-        self.updateParameterNodeFromGUI()
-        self.logic.updateTransformFromParameterNode()
+        self.ui.leftRightSlider.value = self.ui.leftRightSlider.value - self.logic.STEP_SIZE_TRANSLATION
 
     def onUpButton(self):
-        # Add 1 to Superior Translation 
-        currentTs = float(self._parameterNode.GetParameter(self.logic.TRANSLATE_S))
-        self._parameterNode.SetParameter(self.logic.TRANSLATE_S, str(currentTs + 1))
-        self.updateGUIFromParameterNode()
-        self.logic.updateTransformFromParameterNode()
+        self.ui.upDownSlider.value = self.ui.upDownSlider.value + self.logic.STEP_SIZE_TRANSLATION
 
     def onDownButton(self):
-        # Subtract 1 from Superior Translation
-        currentTs = float(self._parameterNode.GetParameter(self.logic.TRANSLATE_S))
-        self._parameterNode.SetParameter(self.logic.TRANSLATE_S, str(currentTs - 1))
-        self.updateGUIFromParameterNode()
-        self.logic.updateTransformFromParameterNode()
-
-    def onUpDownSlider(self):
-        self.updateParameterNodeFromGUI()
-        self.logic.updateTransformFromParameterNode()
+        self.ui.upDownSlider.value = self.ui.upDownSlider.value - self.logic.STEP_SIZE_TRANSLATION
 
     def onInButton(self):
-        # Add 1 unit along need length to TRANSLATE R,A,S
-        currentTI = float(self._parameterNode.GetParameter(self.logic.TRANSLATE_I))
-        self._parameterNode.SetParameter(self.logic.TRANSLATE_I, str(currentTI + 1))
-        self.updateGUIFromParameterNode()
-        self.logic.updateTransformFromParameterNode()
-        self.logic.moveNeedleIn(5)
+        self.logic.moveNeedleIn(1)
 
-  
+    def onInLargeButton(self):
+        self.logic.moveNeedleIn(10)
+
     def onOutButton(self):
-        # Subtract 1 from Anterior Translation
-        currentTa = float(self._parameterNode.GetParameter(self.logic.TRANSLATE_I))
-        self._parameterNode.SetParameter(self.logic.TRANSLATE_I, str(currentTa - 1))
-        self.updateGUIFromParameterNode()
-        # self.logic.updateTransformFromParameterNode()
-        self.logic.moveNeedleIn(-5)
- 
-    def onInOutSlider(self):
-        self.updateParameterNodeFromGUI()
-        self.logic.updateTransformFromParameterNode()
+        self.logic.moveNeedleIn(-1)
 
-    
+    def onOutLargeButton(self):
+        self.logic.moveNeedleIn(-10)
+ 
     # Rotation
     def onCranialRotationButton(self):
-        # Add 1 degree to Rotation R 
-        currentRr = float(self._parameterNode.GetParameter(self.logic.ROTATE_R))
-        self._parameterNode.SetParameter(self.logic.ROTATE_R, str(currentRr + 1))
-        self.updateGUIFromParameterNode()
+        self.ui.cranialRotationSlider.value = self.ui.cranialRotationSlider.value + self.logic.STEP_SIZE_ROTATION
 
     def onCaudalRotationButton(self):
-        # Subtract 1 degree from Rotation R
-        currentRr = float(self._parameterNode.GetParameter(self.logic.ROTATE_R))
-        self._parameterNode.SetParameter(self.logic.ROTATE_R, str(currentRr - 1))
-        self.updateGUIFromParameterNode()
-        
-    def onCranialRotationSlider(self):
-        self.updateParameterNodeFromGUI()
-        # Print the rotation parameters 
-        print('Rotation R: ' + self._parameterNode.GetParameter(self.logic.ROTATE_R))
-        self.logic.updateTransformFromParameterNode()
-    
+        self.ui.cranialRotationSlider.value = self.ui.cranialRotationSlider.value - self.logic.STEP_SIZE_ROTATION
+
     def onLeftRotationButton(self):
-        # Add 1 degree to Rotation S
-        currentRs = float(self._parameterNode.GetParameter(self.logic.ROTATE_S))
-        self._parameterNode.SetParameter(self.logic.ROTATE_S, str(currentRs + 1))
-        # print Rotation S
-        print(self._parameterNode.GetParameter(self.logic.ROTATE_S))
-        self.updateGUIFromParameterNode()
-        self.logic.updateTransformFromParameterNode()
+        self.ui.leftRotationSlider.value = self.ui.leftRotationSlider.value - self.logic.STEP_SIZE_ROTATION
 
     def onRightRotationButton(self):
-        # Subtract 1 degree from Rotation S
-        currentRs = float(self._parameterNode.GetParameter(self.logic.ROTATE_S))
-        self._parameterNode.SetParameter(self.logic.ROTATE_S, str(currentRs - 1))
-        self.updateGUIFromParameterNode()
-        self.logic.updateTransformFromParameterNode()
-
-    def onLeftRotationSlider(self):
-        self.updateParameterNodeFromGUI()
-        print('Rotation S: ' + self._parameterNode.GetParameter(self.logic.ROTATE_S))
-        self.logic.updateTransformFromParameterNode()
-
-    
-
-    
-
+        self.ui.leftRotationSlider.value = self.ui.leftRotationSlider.value + self.logic.STEP_SIZE_ROTATION
 
 #
 # SpineGuidanceStudyModuleLogic
@@ -391,14 +347,19 @@ class SpineGuidanceStudyModuleWidget(ScriptedLoadableModuleWidget, VTKObservatio
 
 class SpineGuidanceStudyModuleLogic(ScriptedLoadableModuleLogic):
 
+    CURRENT_US_VOLUME = "CurrentUsVolume"
+    MOTION_MARGIN = 100  # Allow needle to go outside image volume by this many mm
+    STEP_SIZE_TRANSLATION = 1  # Translation single click in mm
+    STEP_SIZE_ROTATION = 1  # Rotation single click in degrees
+
     NEEDLE_TO_RAS_TRANSFORM = "NeedleToRasTransform"
     NEEDLE_MODEL = "NeedleModel"
     TRANSLATE_R = "TranslateR"
     TRANSLATE_A = "TranslateA"
     TRANSLATE_S = "TranslateS"
-    TRANSLATE_I = "TranslateI"
     ROTATE_R = "RotateR"
     ROTATE_S = "RotateS"
+
     def __init__(self):
         """
         Called when the logic class is instantiated. Can be used for initializing member variables.
@@ -420,12 +381,9 @@ class SpineGuidanceStudyModuleLogic(ScriptedLoadableModuleLogic):
         # Set Translate S
         if not parameterNode.GetParameter(self.TRANSLATE_S):
             parameterNode.SetParameter(self.TRANSLATE_S, "0")
-        # Set Translate I
-        if not parameterNode.GetParameter(self.TRANSLATE_I):
-            parameterNode.SetParameter(self.TRANSLATE_I, "0")
         # Set Rotate R
         if not parameterNode.GetParameter(self.ROTATE_R):
-            parameterNode.SetParameter(self.ROTATE_R, "-90")
+            parameterNode.SetParameter(self.ROTATE_R, "0")
         # Set Rotate S  
         if not parameterNode.GetParameter(self.ROTATE_S):
             parameterNode.SetParameter(self.ROTATE_S, "0")
@@ -433,6 +391,52 @@ class SpineGuidanceStudyModuleLogic(ScriptedLoadableModuleLogic):
 
     def process(self, inputVolume, outputVolume, imageThreshold, invert=False, showResult=True):
         pass
+
+    def setupScene(self):
+        parameterNode = self.getParameterNode()
+
+        # NeedleToRasTransform
+
+        # If NeedleToRasTransform is not in the scene, create and add it
+        needleToRasTransform = slicer.util.getFirstNodeByName(self.NEEDLE_TO_RAS_TRANSFORM)  # ***
+        if needleToRasTransform is None:
+            needleToRasTransform = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLLinearTransformNode', self.NEEDLE_TO_RAS_TRANSFORM)
+            parameterNode.SetNodeReferenceID(self.NEEDLE_TO_RAS_TRANSFORM, needleToRasTransform.GetID())
+
+        # NeedleModel
+
+        # If NeedleModel is not in the scene, create and add it
+        needleModel = slicer.util.getFirstNodeByName(self.NEEDLE_MODEL)
+        if needleModel is None:
+            createModelsLogic = slicer.modules.createmodels.logic()
+            # creates a needle model with 4 arguments: Length, radius, tip radius, and DepthMarkers
+            needleModel = createModelsLogic.CreateNeedle(80, 1.0, 2.5, 0)
+            needleModel.SetName(self.NEEDLE_MODEL)
+            parameterNode.SetNodeReferenceID(self.NEEDLE_MODEL, needleModel.GetID())
+        # If not already transformed, add it to the NeedleToRas transform
+        needleModelTransform = needleModel.GetParentTransformNode()
+        if needleModelTransform is None:
+            needleModel.SetAndObserveTransformNodeID(needleToRasTransform.GetID())
+
+        # NeedleTip pointlist
+
+        # If pointList_NeedleTip is not in the scene, create and add it
+        pointList_NeedleTip = parameterNode.GetNodeReference(self.NEEDLE_TIP)
+        if pointList_NeedleTip == None:
+            # Create a point list for the needle tip in reference coordinates
+            pointList_NeedleTip = slicer.vtkMRMLMarkupsFiducialNode()
+            pointList_NeedleTip.SetName("pointList_NeedleTip")
+            slicer.mrmlScene.AddNode(pointList_NeedleTip)
+            # Set the role of the point list
+            parameterNode.SetNodeReferenceID(self.NEEDLE_TIP, pointList_NeedleTip.GetID())
+        # Add a point to the point list
+        if pointList_NeedleTip.GetNumberOfControlPoints() == 0:
+            pointList_NeedleTip.AddControlPoint(np.array([0, 0, 0]))
+            pointList_NeedleTip.SetNthControlPointLabel(0, "origin_Tip")
+        # If not already transformed, add it to the NeedleToRas transform
+        pointList_NeedleTipTransform = pointList_NeedleTip.GetParentTransformNode()
+        if pointList_NeedleTipTransform is None:
+            pointList_NeedleTip.SetAndObserveTransformNodeID(needleToRasTransform.GetID())
 
     def previousScene(self):
         pass
@@ -443,56 +447,22 @@ class SpineGuidanceStudyModuleLogic(ScriptedLoadableModuleLogic):
     def updateTransformFromParameterNode(self):
         """
         Update the transform from the parameter node
-
         """
-        # Get the parameter node
-        parameterNode = self.getParameterNode()
-        # Get the transform node from the parameter node
-        needleToRasTransformNode = parameterNode.GetNodeReference(self.NEEDLE_TO_RAS_TRANSFORM)
-        # create a new transform from the translation components in the parameter node
-        needleToRasTransform = vtk.vtkTransform()
-
-        '''Update Translate R, A, S using Translate I'''
-        # TranslateI_RAS = self.getI_InTermsOf_RAS() # This is part of the problem
+        parameterNode = self.getParameterNode()  # Get the parameter node
 
         # apply the translation and rotation in the world frame: TRANSLATE_R, TRANSLATE_S, ROTATE_R, ROTATE_S
-        # needleToRasTransform.Translate(float(parameterNode.GetParameter(self.TRANSLATE_R)) + TranslateI_RAS[0],
-        #                                 float(parameterNode.GetParameter(self.TRANSLATE_A)) + TranslateI_RAS[1],
-        #                                 float(parameterNode.GetParameter(self.TRANSLATE_S)) + TranslateI_RAS[2])
+
+        needleToRasTransform = vtk.vtkTransform()
         needleToRasTransform.Translate(float(parameterNode.GetParameter(self.TRANSLATE_R)),
-                                        float(parameterNode.GetParameter(self.TRANSLATE_A)),
-                                        float(parameterNode.GetParameter(self.TRANSLATE_S)))                        
-        needleToRasTransform.RotateX(float(parameterNode.GetParameter(self.ROTATE_R)))
+                                       float(parameterNode.GetParameter(self.TRANSLATE_A)),
+                                       float(parameterNode.GetParameter(self.TRANSLATE_S)))
+        needleToRasTransform.RotateX(float(parameterNode.GetParameter(self.ROTATE_R))-90)  # Start at anterior direction
         needleToRasTransform.RotateY(float(parameterNode.GetParameter(self.ROTATE_S)))
-        # translate using Translate I
-        # needleToRasTransform.Translate(0, 0, float(parameterNode.GetParameter(self.TRANSLATE_I)))
+
         # Set the transform to the transform node
-        needleToRasTransformNode.SetAndObserveTransformToParent(needleToRasTransform)
 
-    # Returns the Translate I in terms of RAS
-    def getI_InTermsOf_RAS(self):
-        ''' Attempt to implement translation along the needle axis'''
-
-        # Get the parameter node
-        parameterNode = self.getParameterNode()
-        # Get the transform node from the parameter node
         needleToRasTransformNode = parameterNode.GetNodeReference(self.NEEDLE_TO_RAS_TRANSFORM)
-        # Get the transform from the transform node
-        needleToRasTransform = needleToRasTransformNode.GetTransformToParent()
-        # Get TRANSLATION_I from the parameter node
-        translateI = float(parameterNode.GetParameter(self.TRANSLATE_I))
-        Translation_Needle = [ 0, 0, translateI]
-        print('Translation_Needle:',Translation_Needle)
-        # Rotate Translation_Needle to the parent frame
-        Translation_RAS = needleToRasTransform.TransformVector(Translation_Needle)
-        print('Translation_RAS:',Translation_RAS)
-        # Add Translation_RAS to the current translation
-        # get TRANSLATE_r AND a and s
-        translateR = float(parameterNode.GetParameter(self.TRANSLATE_R))
-        translateA = float(parameterNode.GetParameter(self.TRANSLATE_A))
-        translateS = float(parameterNode.GetParameter(self.TRANSLATE_S))
-        return Translation_RAS
-
+        needleToRasTransformNode.SetAndObserveTransformToParent(needleToRasTransform)
 
     def moveNeedleIn(self, distance):
         # Get the parameter node
@@ -512,11 +482,6 @@ class SpineGuidanceStudyModuleLogic(ScriptedLoadableModuleLogic):
         # Update transform from Parameter Node
         self.updateTransformFromParameterNode()
         
-
-
-
-        
-
 
 
 
@@ -567,23 +532,10 @@ class SpineGuidanceStudyModuleTest(ScriptedLoadableModuleTest):
         self.assertEqual(inputScalarRange[0], 0)
         self.assertEqual(inputScalarRange[1], 695)
 
-        outputVolume = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLScalarVolumeNode")
-        threshold = 100
-
         # Test the module logic
 
         logic = SpineGuidanceStudyModuleLogic()
 
-        # Test algorithm with non-inverted threshold
-        logic.process(inputVolume, outputVolume, threshold, True)
-        outputScalarRange = outputVolume.GetImageData().GetScalarRange()
-        self.assertEqual(outputScalarRange[0], inputScalarRange[0])
-        self.assertEqual(outputScalarRange[1], threshold)
-
-        # Test algorithm with inverted threshold
-        logic.process(inputVolume, outputVolume, threshold, False)
-        outputScalarRange = outputVolume.GetImageData().GetScalarRange()
-        self.assertEqual(outputScalarRange[0], inputScalarRange[0])
-        self.assertEqual(outputScalarRange[1], inputScalarRange[1])
+        #todo: add logic test code here
 
         self.delayDisplay('Test passed')

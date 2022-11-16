@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>573</width>
+    <width>448</width>
     <height>717</height>
    </rect>
   </property>
@@ -49,19 +49,6 @@ p, li { white-space: pre-wrap; }
         </property>
        </widget>
       </item>
-      <item row="1" column="2">
-       <widget class="QPushButton" name="nextButton">
-        <property name="enabled">
-         <bool>true</bool>
-        </property>
-        <property name="toolTip">
-         <string>Run the algorithm.</string>
-        </property>
-        <property name="text">
-         <string>Next</string>
-        </property>
-       </widget>
-      </item>
       <item row="1" column="0">
        <widget class="QPushButton" name="previousButton">
         <property name="enabled">
@@ -72,6 +59,19 @@ p, li { white-space: pre-wrap; }
         </property>
         <property name="text">
          <string>Previous</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="2">
+       <widget class="QPushButton" name="nextButton">
+        <property name="enabled">
+         <bool>true</bool>
+        </property>
+        <property name="toolTip">
+         <string>Run the algorithm.</string>
+        </property>
+        <property name="text">
+         <string>Next</string>
         </property>
        </widget>
       </item>
@@ -90,79 +90,6 @@ p, li { white-space: pre-wrap; }
       <string>Translation</string>
      </property>
      <layout class="QGridLayout" name="gridLayout_2">
-      <item row="3" column="2">
-       <widget class="QPushButton" name="outButton">
-        <property name="enabled">
-         <bool>true</bool>
-        </property>
-        <property name="toolTip">
-         <string>Run the algorithm.</string>
-        </property>
-        <property name="text">
-         <string>Out</string>
-        </property>
-       </widget>
-      </item>
-      <item row="0" column="0">
-       <widget class="ctkSliderWidget" name="leftRightSlider">
-        <property name="toolTip">
-         <string>Set threshold value for computing the output image. Voxels that have intensities lower than this value will set to zero.</string>
-        </property>
-        <property name="decimals">
-         <number>0</number>
-        </property>
-        <property name="singleStep">
-         <double>5.000000000000000</double>
-        </property>
-        <property name="minimum">
-         <double>-100.000000000000000</double>
-        </property>
-        <property name="maximum">
-         <double>100.000000000000000</double>
-        </property>
-        <property name="value">
-         <double>-100.000000000000000</double>
-        </property>
-        <property name="tracking">
-         <bool>true</bool>
-        </property>
-       </widget>
-      </item>
-      <item row="1" column="2">
-       <widget class="QPushButton" name="downButton">
-        <property name="enabled">
-         <bool>true</bool>
-        </property>
-        <property name="toolTip">
-         <string>Run the algorithm.</string>
-        </property>
-        <property name="text">
-         <string>Down</string>
-        </property>
-       </widget>
-      </item>
-      <item row="1" column="0">
-       <widget class="ctkSliderWidget" name="upDownSlider">
-        <property name="toolTip">
-         <string>Set threshold value for computing the output image. Voxels that have intensities lower than this value will set to zero.</string>
-        </property>
-        <property name="decimals">
-         <number>0</number>
-        </property>
-        <property name="singleStep">
-         <double>5.000000000000000</double>
-        </property>
-        <property name="minimum">
-         <double>-600.000000000000000</double>
-        </property>
-        <property name="maximum">
-         <double>-180.000000000000000</double>
-        </property>
-        <property name="value">
-         <double>-500.000000000000000</double>
-        </property>
-       </widget>
-      </item>
       <item row="0" column="1">
        <widget class="QPushButton" name="leftButton">
         <property name="enabled">
@@ -176,18 +103,71 @@ p, li { white-space: pre-wrap; }
         </property>
        </widget>
       </item>
-      <item row="1" column="1">
-       <widget class="QPushButton" name="upButton">
-        <property name="enabled">
-         <bool>true</bool>
-        </property>
+      <item row="1" column="0">
+       <widget class="ctkSliderWidget" name="upDownSlider">
         <property name="toolTip">
-         <string>Run the algorithm.</string>
+         <string>Set threshold value for computing the output image. Voxels that have intensities lower than this value will set to zero.</string>
         </property>
-        <property name="text">
-         <string>Up</string>
+        <property name="decimals">
+         <number>0</number>
+        </property>
+        <property name="singleStep">
+         <double>1.000000000000000</double>
+        </property>
+        <property name="minimum">
+         <double>-500.000000000000000</double>
+        </property>
+        <property name="maximum">
+         <double>500.000000000000000</double>
+        </property>
+        <property name="value">
+         <double>0.000000000000000</double>
         </property>
        </widget>
+      </item>
+      <item row="2" column="0" colspan="3">
+       <layout class="QHBoxLayout" name="horizontalLayout">
+        <item>
+         <widget class="QPushButton" name="needleInLargeButton">
+          <property name="text">
+           <string>In 10 mm</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="inButton">
+          <property name="enabled">
+           <bool>true</bool>
+          </property>
+          <property name="toolTip">
+           <string>Run the algorithm.</string>
+          </property>
+          <property name="text">
+           <string>In 1 mm</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="outButton">
+          <property name="enabled">
+           <bool>true</bool>
+          </property>
+          <property name="toolTip">
+           <string>Run the algorithm.</string>
+          </property>
+          <property name="text">
+           <string>Out 1 mm</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="needleOutLargeButton">
+          <property name="text">
+           <string>Out 10 mm</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
       </item>
       <item row="0" column="2">
        <widget class="QPushButton" name="rightButton">
@@ -202,24 +182,8 @@ p, li { white-space: pre-wrap; }
         </property>
        </widget>
       </item>
-      <item row="3" column="1">
-       <widget class="QPushButton" name="inButton">
-        <property name="enabled">
-         <bool>true</bool>
-        </property>
-        <property name="toolTip">
-         <string>Run the algorithm.</string>
-        </property>
-        <property name="text">
-         <string>In</string>
-        </property>
-       </widget>
-      </item>
-      <item row="3" column="0">
-       <widget class="ctkSliderWidget" name="inOutSlider">
-        <property name="enabled">
-         <bool>false</bool>
-        </property>
+      <item row="0" column="0">
+       <widget class="ctkSliderWidget" name="leftRightSlider">
         <property name="toolTip">
          <string>Set threshold value for computing the output image. Voxels that have intensities lower than this value will set to zero.</string>
         </property>
@@ -227,7 +191,7 @@ p, li { white-space: pre-wrap; }
          <number>0</number>
         </property>
         <property name="singleStep">
-         <double>5.000000000000000</double>
+         <double>1.000000000000000</double>
         </property>
         <property name="minimum">
          <double>-100.000000000000000</double>
@@ -237,6 +201,35 @@ p, li { white-space: pre-wrap; }
         </property>
         <property name="value">
          <double>0.000000000000000</double>
+        </property>
+        <property name="tracking">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="1">
+       <widget class="QPushButton" name="downButton">
+        <property name="enabled">
+         <bool>true</bool>
+        </property>
+        <property name="toolTip">
+         <string>Run the algorithm.</string>
+        </property>
+        <property name="text">
+         <string>Down</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="2">
+       <widget class="QPushButton" name="upButton">
+        <property name="enabled">
+         <bool>true</bool>
+        </property>
+        <property name="toolTip">
+         <string>Run the algorithm.</string>
+        </property>
+        <property name="text">
+         <string>Up</string>
         </property>
        </widget>
       </item>
@@ -249,19 +242,6 @@ p, li { white-space: pre-wrap; }
       <string>Rotation</string>
      </property>
      <layout class="QGridLayout" name="gridLayout_3">
-      <item row="1" column="1">
-       <widget class="QPushButton" name="leftRotationButton">
-        <property name="enabled">
-         <bool>true</bool>
-        </property>
-        <property name="toolTip">
-         <string>Run the algorithm.</string>
-        </property>
-        <property name="text">
-         <string>Left Rotation</string>
-        </property>
-       </widget>
-      </item>
       <item row="0" column="0">
        <widget class="ctkSliderWidget" name="cranialRotationSlider">
         <property name="toolTip">
@@ -271,55 +251,16 @@ p, li { white-space: pre-wrap; }
          <number>0</number>
         </property>
         <property name="singleStep">
-         <double>5.000000000000000</double>
+         <double>1.000000000000000</double>
         </property>
         <property name="minimum">
-         <double>-180.000000000000000</double>
+         <double>-90.000000000000000</double>
         </property>
         <property name="maximum">
-         <double>0.000000000000000</double>
+         <double>90.000000000000000</double>
         </property>
         <property name="value">
          <double>0.000000000000000</double>
-        </property>
-       </widget>
-      </item>
-      <item row="0" column="1">
-       <widget class="QPushButton" name="cranialRotationButton">
-        <property name="enabled">
-         <bool>true</bool>
-        </property>
-        <property name="toolTip">
-         <string>Run the algorithm.</string>
-        </property>
-        <property name="text">
-         <string>Cranial Rotation</string>
-        </property>
-       </widget>
-      </item>
-      <item row="1" column="2">
-       <widget class="QPushButton" name="rightRotationButton">
-        <property name="enabled">
-         <bool>true</bool>
-        </property>
-        <property name="toolTip">
-         <string>Run the algorithm.</string>
-        </property>
-        <property name="text">
-         <string>Right Rotation</string>
-        </property>
-       </widget>
-      </item>
-      <item row="0" column="2">
-       <widget class="QPushButton" name="caudalRotationButton">
-        <property name="enabled">
-         <bool>true</bool>
-        </property>
-        <property name="toolTip">
-         <string>Run the algorithm.</string>
-        </property>
-        <property name="text">
-         <string>Caudal Rotation</string>
         </property>
        </widget>
       </item>
@@ -332,16 +273,128 @@ p, li { white-space: pre-wrap; }
          <number>0</number>
         </property>
         <property name="singleStep">
-         <double>5.000000000000000</double>
+         <double>1.000000000000000</double>
         </property>
         <property name="minimum">
-         <double>-180.000000000000000</double>
+         <double>-90.000000000000000</double>
         </property>
         <property name="maximum">
-         <double>180.000000000000000</double>
+         <double>90.000000000000000</double>
         </property>
         <property name="value">
          <double>0.000000000000000</double>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="2">
+       <widget class="QPushButton" name="rightRotationButton">
+        <property name="enabled">
+         <bool>true</bool>
+        </property>
+        <property name="toolTip">
+         <string>Run the algorithm.</string>
+        </property>
+        <property name="text">
+         <string>Right</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="1">
+       <widget class="QPushButton" name="leftRotationButton">
+        <property name="enabled">
+         <bool>true</bool>
+        </property>
+        <property name="toolTip">
+         <string>Run the algorithm.</string>
+        </property>
+        <property name="text">
+         <string>Left</string>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="2">
+       <widget class="QPushButton" name="cranialRotationButton">
+        <property name="enabled">
+         <bool>true</bool>
+        </property>
+        <property name="toolTip">
+         <string>Run the algorithm.</string>
+        </property>
+        <property name="text">
+         <string>Cranial</string>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="1">
+       <widget class="QPushButton" name="caudalRotationButton">
+        <property name="enabled">
+         <bool>true</bool>
+        </property>
+        <property name="toolTip">
+         <string>Run the algorithm.</string>
+        </property>
+        <property name="text">
+         <string>Caudal</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item>
+    <widget class="QPushButton" name="resetNeedleButton">
+     <property name="text">
+      <string>Reset task</string>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="ctkCollapsibleButton" name="CollapsibleButton">
+     <property name="text">
+      <string>Settings</string>
+     </property>
+     <layout class="QFormLayout" name="formLayout">
+      <item row="0" column="1">
+       <widget class="qMRMLNodeComboBox" name="usVolumeComboBox">
+        <property name="nodeTypes">
+         <stringlist notr="true">
+          <string>vtkMRMLScalarVolumeNode</string>
+         </stringlist>
+        </property>
+        <property name="hideChildNodeTypes">
+         <stringlist notr="true"/>
+        </property>
+        <property name="interactionNodeSingletonTag">
+         <string notr="true"/>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="0">
+       <widget class="QLabel" name="label">
+        <property name="text">
+         <string>US volume: </string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="1">
+       <widget class="qMRMLNodeComboBox" name="needleTransformComboBox">
+        <property name="nodeTypes">
+         <stringlist notr="true">
+          <string>vtkMRMLLinearTransformNode</string>
+         </stringlist>
+        </property>
+        <property name="hideChildNodeTypes">
+         <stringlist notr="true"/>
+        </property>
+        <property name="interactionNodeSingletonTag">
+         <string notr="true"/>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="0">
+       <widget class="QLabel" name="label_2">
+        <property name="text">
+         <string>Needle transform: </string>
         </property>
        </widget>
       </item>
@@ -393,5 +446,38 @@ p, li { white-space: pre-wrap; }
   </customwidget>
  </customwidgets>
  <resources/>
- <connections/>
+ <connections>
+  <connection>
+   <sender>SpineGuidanceStudyModule</sender>
+   <signal>mrmlSceneChanged(vtkMRMLScene*)</signal>
+   <receiver>usVolumeComboBox</receiver>
+   <slot>setMRMLScene(vtkMRMLScene*)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>286</x>
+     <y>358</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>317</x>
+     <y>384</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>SpineGuidanceStudyModule</sender>
+   <signal>mrmlSceneChanged(vtkMRMLScene*)</signal>
+   <receiver>needleTransformComboBox</receiver>
+   <slot>setMRMLScene(vtkMRMLScene*)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>286</x>
+     <y>358</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>334</x>
+     <y>439</y>
+    </hint>
+   </hints>
+  </connection>
+ </connections>
 </ui>
