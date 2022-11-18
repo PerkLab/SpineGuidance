@@ -89,6 +89,8 @@ class SpineGuidanceStudyModuleWidget(ScriptedLoadableModuleWidget, VTKObservatio
         self.ui.previousButton.connect('clicked(bool)', self.onPreviousButton)
         self.ui.nextButton.connect('clicked(bool)', self.onNextButton)
 
+        self.ui.resetNeedleButton.connect('clicked(bool)', self.onResetNeedleButton)
+
         self.ui.usVolumeComboBox.connect('currentNodeChanged(vtkMRMLNode*)', self.onUsVolumeSelected)
         self.ui.needleTransformComboBox.connect('currentNodeChanged(vtkMRMLNode*)', self.onNeedleTransformSelected)
 
@@ -119,6 +121,8 @@ class SpineGuidanceStudyModuleWidget(ScriptedLoadableModuleWidget, VTKObservatio
         # Make sure parameter node is initialized (needed for module reload)
         self.initializeScene()  # Setup the scene
         self.initializeParameterNode()
+        self.updateWidgetsForCurrentVolume()
+        self.onResetNeedleButton()
 
 
     def initializeScene(self):
@@ -136,6 +140,9 @@ class SpineGuidanceStudyModuleWidget(ScriptedLoadableModuleWidget, VTKObservatio
         """
         # Make sure parameter node exists and observed
         self.initializeParameterNode()
+        # change to custom double 3D view here
+        # self.logic.setupView()
+
 
     def exit(self):
         """
@@ -293,6 +300,44 @@ class SpineGuidanceStudyModuleWidget(ScriptedLoadableModuleWidget, VTKObservatio
     def onNextButton(self):
         self.updateParameterNodeFromGUI()
         self.logic.nextScene()
+
+    def onResetNeedleButton(self):
+        '''
+        This function resets the position and orientation of the needle to default values determined by the current volume size
+        '''
+        # The slider ranges are set according to the current volume
+        # Reset the needle location to the midpont of the slider range
+        # Get min and max of the slider range
+        minR = self.ui.leftRightSlider.minimum
+        maxR = self.ui.leftRightSlider.maximum
+        minS = self.ui.upDownSlider.minimum
+        maxS = self.ui.upDownSlider.maximum
+        # Set the translations in parameter node to midpoints
+        self._parameterNode.SetParameter(self.logic.TRANSLATE_R, str(round((maxR + minR) / 2)))
+        self._parameterNode.SetParameter(self.logic.TRANSLATE_S, str(round((maxS + minS) / 2)))
+        # Set the rotations to 0
+        self._parameterNode.SetParameter(self.logic.ROTATE_R, str(0))
+        self._parameterNode.SetParameter(self.logic.ROTATE_S, str(0))
+
+        # If there is a volume, make the needle as far back as possible, else make it 0
+        usVolume = self._parameterNode.GetNodeReference(self.logic.CURRENT_US_VOLUME)
+        print(usVolume is None)
+        if usVolume is None:
+            self._parameterNode.SetParameter(self.logic.TRANSLATE_A, str(0))
+        else:
+            bounds = np.zeros(6)
+            usVolume.GetRASBounds(bounds)
+            print(bounds)
+            self._parameterNode.SetParameter(self.logic.TRANSLATE_A, str(bounds[2]))
+
+        # Print all the parameters 
+        print(self._parameterNode.GetParameter(self.logic.TRANSLATE_R))
+        print(self._parameterNode.GetParameter(self.logic.TRANSLATE_S))
+        print(self._parameterNode.GetParameter(self.logic.TRANSLATE_A))
+        print(self._parameterNode.GetParameter(self.logic.ROTATE_R))
+        print(self._parameterNode.GetParameter(self.logic.ROTATE_S))
+        # update the transform
+        self.logic.updateTransformFromParameterNode()
 
     # Tranlation
     def onRightButton(self):

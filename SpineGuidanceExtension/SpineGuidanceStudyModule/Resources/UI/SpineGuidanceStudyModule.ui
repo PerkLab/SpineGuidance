@@ -115,10 +115,10 @@ p, li { white-space: pre-wrap; }
          <double>1.000000000000000</double>
         </property>
         <property name="minimum">
-         <double>-500.000000000000000</double>
+         <double>-100.000000000000000</double>
         </property>
         <property name="maximum">
-         <double>500.000000000000000</double>
+         <double>100.000000000000000</double>
         </property>
         <property name="value">
          <double>0.000000000000000</double>
