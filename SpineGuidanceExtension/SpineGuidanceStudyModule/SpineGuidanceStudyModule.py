@@ -74,6 +74,7 @@ class SpineGuidanceStudyModuleWidget(ScriptedLoadableModuleWidget, VTKObservatio
         # in batch mode, without a graphical user interface.
         self.logic = SpineGuidanceStudyModuleLogic()
         self.logic.setupScene()
+        self.setupCustomLayout()
 
         # Connections
 
@@ -119,15 +120,53 @@ class SpineGuidanceStudyModuleWidget(ScriptedLoadableModuleWidget, VTKObservatio
         self.ui.leftRotationSlider.connect("valueChanged(double)", self.updateParameterNodeFromGUI)
 
         # Make sure parameter node is initialized (needed for module reload)
-        self.initializeScene()  # Setup the scene
         self.initializeParameterNode()
         self.updateWidgetsForCurrentVolume()
         self.onResetNeedleButton()
 
+    def setupCustomLayout(self):
+        customLayout = """
+        <layout type="horizontal" split="true">
+        <item>
+            <view class="vtkMRMLViewNode" singletontag="1">
+            <property name="viewlabel" action="default">1</property>
+            <property name="vieworientation" action="default">Sagittal</property>
+            </view>
+        </item>
+        <item>
+            <view class="vtkMRMLViewNode" singletontag="2" type="secondary">
+            <property name="viewlabel" action="default">2</property>
+            <property name="vieworientation" action="default">Axial</property>
+            </view>
+        </item>
+        </layout>
+        """
+        # Built-in layout IDs are all below 100, so you can choose any large random number
+        # for your custom layout ID.
+        customLayoutId=101
+        layoutManager = slicer.app.layoutManager()
+        layoutManager.layoutLogic().GetLayoutNode().AddLayoutDescription(customLayoutId, customLayout)
+        # Switch to the new custom layout
+        layoutManager.setLayout(customLayoutId)
 
-    def initializeScene(self):
-        pass
-        
+        # Setup 3D view 0
+        threeDWidget = layoutManager.threeDWidget(0)
+        threeDView = threeDWidget.threeDView()
+        threeDView.resetFocalPoint()
+        threeDView.rotateToViewAxis(0)
+        viewNode = threeDView.mrmlViewNode()
+        viewNode.SetOrientationMarkerType(viewNode.OrientationMarkerTypeHuman)
+
+        # Setup 3D view 1
+        threeDWidget = layoutManager.threeDWidget(1)
+        threeDView = threeDWidget.threeDView()
+        threeDView.resetFocalPoint()
+        threeDView.rotateToViewAxis(2)
+        viewNode = threeDView.mrmlViewNode()
+        viewNode.SetOrientationMarkerType(viewNode.OrientationMarkerTypeHuman)
+
+
+
     def cleanup(self):
         """
         Called when the application closes and the module widget is destroyed.
@@ -141,8 +180,10 @@ class SpineGuidanceStudyModuleWidget(ScriptedLoadableModuleWidget, VTKObservatio
         # Make sure parameter node exists and observed
         self.initializeParameterNode()
         # change to custom double 3D view here
-        # self.logic.setupView()
-
+        self.setupCustomLayout()
+        layoutManager = slicer.app.layoutManager()
+        layoutManager.setLayout(101)
+        
 
     def exit(self):
         """
@@ -316,26 +357,18 @@ class SpineGuidanceStudyModuleWidget(ScriptedLoadableModuleWidget, VTKObservatio
         self._parameterNode.SetParameter(self.logic.TRANSLATE_R, str(round((maxR + minR) / 2)))
         self._parameterNode.SetParameter(self.logic.TRANSLATE_S, str(round((maxS + minS) / 2)))
         # Set the rotations to 0
-        self._parameterNode.SetParameter(self.logic.ROTATE_R, str(0))
+        self._parameterNode.SetParameter(self.logic.ROTATE_R, str(90))
         self._parameterNode.SetParameter(self.logic.ROTATE_S, str(0))
 
         # If there is a volume, make the needle as far back as possible, else make it 0
         usVolume = self._parameterNode.GetNodeReference(self.logic.CURRENT_US_VOLUME)
-        print(usVolume is None)
         if usVolume is None:
             self._parameterNode.SetParameter(self.logic.TRANSLATE_A, str(0))
         else:
             bounds = np.zeros(6)
             usVolume.GetRASBounds(bounds)
-            print(bounds)
             self._parameterNode.SetParameter(self.logic.TRANSLATE_A, str(bounds[2]))
 
-        # Print all the parameters 
-        print(self._parameterNode.GetParameter(self.logic.TRANSLATE_R))
-        print(self._parameterNode.GetParameter(self.logic.TRANSLATE_S))
-        print(self._parameterNode.GetParameter(self.logic.TRANSLATE_A))
-        print(self._parameterNode.GetParameter(self.logic.ROTATE_R))
-        print(self._parameterNode.GetParameter(self.logic.ROTATE_S))
         # update the transform
         self.logic.updateTransformFromParameterNode()
 
