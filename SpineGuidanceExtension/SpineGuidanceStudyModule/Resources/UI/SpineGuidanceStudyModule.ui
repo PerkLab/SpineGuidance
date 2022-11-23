@@ -342,11 +342,22 @@ p, li { white-space: pre-wrap; }
     </widget>
    </item>
    <item>
-    <widget class="QPushButton" name="resetNeedleButton">
-     <property name="text">
-      <string>Reset task</string>
-     </property>
-    </widget>
+    <layout class="QHBoxLayout" name="horizontalLayout_2">
+     <item>
+      <widget class="QPushButton" name="resetNeedleButton">
+       <property name="text">
+        <string>Reset task</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="resetViewsButton">
+       <property name="text">
+        <string>Reset views</string>
+       </property>
+      </widget>
+     </item>
+    </layout>
    </item>
    <item>
     <widget class="ctkCollapsibleButton" name="CollapsibleButton">

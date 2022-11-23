@@ -43,6 +43,8 @@ class SpineGuidanceStudyModule(ScriptedLoadableModule):
 
 class SpineGuidanceStudyModuleWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
+    LAYOUT_DUAL3D = 101
+
     def __init__(self, parent=None):
         """
         Called when the user opens the module the first time and the widget is initialized.
@@ -74,6 +76,7 @@ class SpineGuidanceStudyModuleWidget(ScriptedLoadableModuleWidget, VTKObservatio
         # in batch mode, without a graphical user interface.
         self.logic = SpineGuidanceStudyModuleLogic()
         self.logic.setupScene()
+
         self.setupCustomLayout()
 
         # Connections
@@ -91,6 +94,7 @@ class SpineGuidanceStudyModuleWidget(ScriptedLoadableModuleWidget, VTKObservatio
         self.ui.nextButton.connect('clicked(bool)', self.onNextButton)
 
         self.ui.resetNeedleButton.connect('clicked(bool)', self.onResetNeedleButton)
+        self.ui.resetViewsButton.connect('clicked(bool)', self.resetViews)
 
         self.ui.usVolumeComboBox.connect('currentNodeChanged(vtkMRMLNode*)', self.onUsVolumeSelected)
         self.ui.needleTransformComboBox.connect('currentNodeChanged(vtkMRMLNode*)', self.onNeedleTransformSelected)
@@ -125,47 +129,25 @@ class SpineGuidanceStudyModuleWidget(ScriptedLoadableModuleWidget, VTKObservatio
         self.onResetNeedleButton()
 
     def setupCustomLayout(self):
-        customLayout = """
-        <layout type="horizontal" split="true">
-        <item>
-            <view class="vtkMRMLViewNode" singletontag="1">
-            <property name="viewlabel" action="default">1</property>
-            <property name="vieworientation" action="default">Sagittal</property>
-            </view>
-        </item>
-        <item>
-            <view class="vtkMRMLViewNode" singletontag="2" type="secondary">
-            <property name="viewlabel" action="default">2</property>
-            <property name="vieworientation" action="default">Axial</property>
-            </view>
-        </item>
-        </layout>
-        """
+        customLayout = \
+            """
+            <layout type="horizontal">
+              <item>
+                <view class="vtkMRMLViewNode" singletontag="1">
+                  <property name="viewLabel" action="default">1</property>
+                </view>
+              </item>
+              <item>
+                <view class="vtkMRMLViewNode" singletontag="2" type="secondary">
+                  <property name="viewlabel" action="default">2</property>
+                </view>
+              </item>
+            </layout>
+            """
         # Built-in layout IDs are all below 100, so you can choose any large random number
         # for your custom layout ID.
-        customLayoutId=101
         layoutManager = slicer.app.layoutManager()
-        layoutManager.layoutLogic().GetLayoutNode().AddLayoutDescription(customLayoutId, customLayout)
-        # Switch to the new custom layout
-        layoutManager.setLayout(customLayoutId)
-
-        # Setup 3D view 0
-        threeDWidget = layoutManager.threeDWidget(0)
-        threeDView = threeDWidget.threeDView()
-        threeDView.resetFocalPoint()
-        threeDView.rotateToViewAxis(0)
-        viewNode = threeDView.mrmlViewNode()
-        viewNode.SetOrientationMarkerType(viewNode.OrientationMarkerTypeHuman)
-
-        # Setup 3D view 1
-        threeDWidget = layoutManager.threeDWidget(1)
-        threeDView = threeDWidget.threeDView()
-        threeDView.resetFocalPoint()
-        threeDView.rotateToViewAxis(2)
-        viewNode = threeDView.mrmlViewNode()
-        viewNode.SetOrientationMarkerType(viewNode.OrientationMarkerTypeHuman)
-
-
+        layoutManager.layoutLogic().GetLayoutNode().AddLayoutDescription(self.LAYOUT_DUAL3D, customLayout)
 
     def cleanup(self):
         """
@@ -180,10 +162,7 @@ class SpineGuidanceStudyModuleWidget(ScriptedLoadableModuleWidget, VTKObservatio
         # Make sure parameter node exists and observed
         self.initializeParameterNode()
         # change to custom double 3D view here
-        self.setupCustomLayout()
-        layoutManager = slicer.app.layoutManager()
-        layoutManager.setLayout(101)
-        
+        self.resetViews()
 
     def exit(self):
         """
@@ -319,8 +298,23 @@ class SpineGuidanceStudyModuleWidget(ScriptedLoadableModuleWidget, VTKObservatio
         else:
             self._parameterNode.SetNodeReferenceID(self.logic.CURRENT_US_VOLUME, selectedNode.GetID())
 
-        if previousReferencedNode != selectedNode:
-            self.updateWidgetsForCurrentVolume()
+        if previousReferencedNode == selectedNode or selectedNode is None:
+            return
+
+        self.updateWidgetsForCurrentVolume()
+
+        # Make sure volume has a volume rendering display node, and display is visible in all 3D views
+
+        volumeRenderingLogic = slicer.modules.volumerendering.logic()
+        displayNode = volumeRenderingLogic.GetFirstVolumeRenderingDisplayNode(selectedNode)
+        if displayNode is None:
+            selectedNode.CreateDefaultDisplayNodes()
+            slicer.modules.volumerendering.logic().CreateDefaultVolumeRenderingNodes(selectedNode)
+            displayNode = volumeRenderingLogic.GetFirstVolumeRenderingDisplayNode(selectedNode)
+
+        displayNode.SetViewNodeIDs([])  # Empty list means all views
+
+        self.resetViews()
 
     def onNeedleTransformSelected(self, selectedNode):
         if self._parameterNode is None or self._updatingGUIFromParameterNode:
@@ -371,6 +365,35 @@ class SpineGuidanceStudyModuleWidget(ScriptedLoadableModuleWidget, VTKObservatio
 
         # update the transform
         self.logic.updateTransformFromParameterNode()
+
+    def resetViews(self):
+        '''
+        Resets the virtual camera positions
+        '''
+        layoutManager = slicer.app.layoutManager()
+        layoutManager.setLayout(self.LAYOUT_DUAL3D)
+
+        # Setup 3D view 0
+        threeDWidget = layoutManager.threeDWidget(0)
+        threeDView = threeDWidget.threeDView()
+        threeDView.resetFocalPoint()
+        threeDView.rotateToViewAxis(2)
+        viewNode = threeDView.mrmlViewNode()
+        viewNode.SetOrientationMarkerType(viewNode.OrientationMarkerTypeHuman)
+        viewNode.SetOrientationMarkerSize(1)
+        viewNode.SetBoxVisible(False)
+        viewNode.SetAxisLabelsVisible(False)
+
+        # Setup 3D view 1
+        threeDWidget = layoutManager.threeDWidget(1)
+        threeDView = threeDWidget.threeDView()
+        threeDView.resetFocalPoint()
+        threeDView.rotateToViewAxis(0)
+        viewNode = threeDView.mrmlViewNode()
+        viewNode.SetOrientationMarkerType(viewNode.OrientationMarkerTypeHuman)
+        viewNode.SetOrientationMarkerSize(1)
+        viewNode.SetBoxVisible(False)
+        viewNode.SetAxisLabelsVisible(False)
 
     # Tranlation
     def onRightButton(self):
@@ -502,6 +525,9 @@ class SpineGuidanceStudyModuleLogic(ScriptedLoadableModuleLogic):
         if pointList_NeedleTip.GetNumberOfControlPoints() == 0:
             pointList_NeedleTip.AddControlPoint(np.array([0, 0, 0]))
             pointList_NeedleTip.SetNthControlPointLabel(0, "origin_Tip")
+
+        pointList_NeedleTip.GetDisplayNode().SetVisibility(False)  # Hide needle tip markup by default
+
         # If not already transformed, add it to the NeedleToRas transform
         pointList_NeedleTipTransform = pointList_NeedleTip.GetParentTransformNode()
         if pointList_NeedleTipTransform is None:
