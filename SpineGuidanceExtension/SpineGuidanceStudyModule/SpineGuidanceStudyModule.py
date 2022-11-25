@@ -87,8 +87,7 @@ class SpineGuidanceStudyModuleWidget(ScriptedLoadableModuleWidget, VTKObservatio
 
     # These connections ensure that whenever user changes some settings on the GUI, that is saved in the MRML scene
     # (in the selected parameter node).
-    self.ui.sceneSelector.connect("currentNodeChanged(vtkMRMLNode*)", self.updateParameterNodeFromGUI)
-
+    self.ui.taskSelector.connect('currentPathChanged(QString)', self.onTaskChanged)
     # Scene selection
     self.ui.previousButton.connect('clicked(bool)', self.onPreviousButton)
     self.ui.nextButton.connect('clicked(bool)', self.onNextButton)
@@ -125,8 +124,7 @@ class SpineGuidanceStudyModuleWidget(ScriptedLoadableModuleWidget, VTKObservatio
 
     # Saving
     self.ui.saveDirectoryButton.connect('directorySelected(QString)', self.onSaveDirectoryChanged)
-    self.ui.participantIDSelector.connect('currentIndexChanged(QString)', self.onParticipantIDSelectorChanged)
-    self.ui.taskSelector.connect('currentPathChanged(QString)', self.onTaskChanged)
+    self.ui.participantIDLineEdit.connect('textChanged(QString)', self.onParticipantIDChanged)
     self.ui.saveButton.connect('clicked(bool)', self.onSaveButton)
 
     # Make sure parameter node is initialized (needed for module reload)
@@ -136,8 +134,6 @@ class SpineGuidanceStudyModuleWidget(ScriptedLoadableModuleWidget, VTKObservatio
     self.onResetNeedleButton()
 
   def initializeGUI(self):
-    # Add a default participant ID
-    self.ui.participantIDSelector.addItem("P001")
     # initailize the save directory using settings
     settings = slicer.app.userSettings()
     if settings.value(self.logic.RESULTS_SAVE_DIRECTORY_SETTING): # if the settings exists
@@ -261,6 +257,9 @@ class SpineGuidanceStudyModuleWidget(ScriptedLoadableModuleWidget, VTKObservatio
     self.ui.upDownSlider.value = float(self._parameterNode.GetParameter(self.logic.TRANSLATE_S))
     self.ui.cranialRotationSlider.value = float(self._parameterNode.GetParameter(self.logic.ROTATE_R))
     self.ui.leftRotationSlider.value = float(self._parameterNode.GetParameter(self.logic.ROTATE_S))
+
+    # update participant ID
+    self.ui.participantIDLineEdit.text = self._parameterNode.GetParameter(self.logic.PARTICIPANT_ID)
 
     # Update buttons states and tooltips
 
@@ -456,8 +455,8 @@ class SpineGuidanceStudyModuleWidget(ScriptedLoadableModuleWidget, VTKObservatio
     settings = slicer.app.userSettings()
     settings.setValue(self.logic.RESULTS_SAVE_DIRECTORY_SETTING, directory)
     
-  def onParticipantIDSelectorChanged(self, participantID):
-    # add the participant ID to the parameter node
+  def onParticipantIDChanged(self, participantID):
+    # update the participant ID in the parameter node
     self._parameterNode.SetParameter(self.logic.PARTICIPANT_ID, participantID)
 
   def onTaskChanged(self, taskPath):
@@ -627,16 +626,13 @@ class SpineGuidanceStudyModuleLogic(ScriptedLoadableModuleLogic):
     Save the results to a file:
     - NeedleToRasTransform
     Save in format:
-    TaskName_ParticipantID_NeedleToRas.h5
+    NeedleToRas_TaskName_ParticipantID.h5
     '''
     # Get the parameter node
     parameterNode = self.getParameterNode()
 
     # Get the NeedleToRasTransform maxtrix node to save
     needleToRasTransformNode = parameterNode.GetNodeReference(self.NEEDLE_TO_RAS_TRANSFORM)
-    needleToRasTransform = needleToRasTransformNode.GetTransformToParent()
-    needleToRasTransformMatrix = vtk.vtkMatrix4x4()
-    needleToRasTransform.GetMatrix(needleToRasTransformMatrix)
     
     # Format the name of the file
     # Get the task name
@@ -646,15 +642,13 @@ class SpineGuidanceStudyModuleLogic(ScriptedLoadableModuleLogic):
     # Get the transform name
     transformName = needleToRasTransformNode.GetName()
     # Get the file name
-    fileName = taskName + "_" + participantID + "_" + transformName + ".h5"
-
+    fileName = transformName + "_" + taskName + "_" + participantID + ".h5"
     # Get the Save Directory from slicer settings
     settings = slicer.app.userSettings()
     saveDirectory = settings.value(self.RESULTS_SAVE_DIRECTORY_SETTING)
 
     # Save the NeedleToRasTransform to saveDirectory with fileName
     slicer.util.saveNode(needleToRasTransformNode, os.path.join(saveDirectory, fileName))
-    print('here')
 
 #
 # SpineGuidanceStudyModuleTest

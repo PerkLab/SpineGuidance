@@ -28,24 +28,16 @@ p, li { white-space: pre-wrap; }
       <string>Scene Selection</string>
      </property>
      <layout class="QGridLayout" name="gridLayout">
-      <item row="1" column="1">
-       <widget class="qMRMLNodeComboBox" name="sceneSelector">
+      <item row="1" column="2">
+       <widget class="QPushButton" name="nextButton">
+        <property name="enabled">
+         <bool>true</bool>
+        </property>
         <property name="toolTip">
-         <string>Pick the input to the algorithm.</string>
+         <string>Run the algorithm.</string>
         </property>
-        <property name="nodeTypes">
-         <stringlist notr="true">
-          <string>vtkMRMLScalarVolumeNode</string>
-         </stringlist>
-        </property>
-        <property name="showChildNodeTypes">
-         <bool>false</bool>
-        </property>
-        <property name="addEnabled">
-         <bool>false</bool>
-        </property>
-        <property name="removeEnabled">
-         <bool>false</bool>
+        <property name="text">
+         <string>Next</string>
         </property>
        </widget>
       </item>
@@ -62,18 +54,8 @@ p, li { white-space: pre-wrap; }
         </property>
        </widget>
       </item>
-      <item row="1" column="2">
-       <widget class="QPushButton" name="nextButton">
-        <property name="enabled">
-         <bool>true</bool>
-        </property>
-        <property name="toolTip">
-         <string>Run the algorithm.</string>
-        </property>
-        <property name="text">
-         <string>Next</string>
-        </property>
-       </widget>
+      <item row="1" column="1">
+       <widget class="ctkPathLineEdit" name="taskSelector"/>
       </item>
      </layout>
     </widget>
@@ -382,16 +364,6 @@ p, li { white-space: pre-wrap; }
         </property>
        </widget>
       </item>
-      <item row="2" column="1">
-       <widget class="ctkComboBox" name="participantIDSelector">
-        <property name="enabled">
-         <bool>true</bool>
-        </property>
-        <property name="editable">
-         <bool>true</bool>
-        </property>
-       </widget>
-      </item>
       <item row="4" column="1">
        <widget class="QPushButton" name="saveButton">
         <property name="text">
@@ -399,15 +371,8 @@ p, li { white-space: pre-wrap; }
         </property>
        </widget>
       </item>
-      <item row="3" column="1">
-       <widget class="ctkPathLineEdit" name="taskSelector"/>
-      </item>
-      <item row="3" column="0">
-       <widget class="QLabel" name="label_5">
-        <property name="text">
-         <string>Task - Temp</string>
-        </property>
-       </widget>
+      <item row="2" column="1">
+       <widget class="QLineEdit" name="participantIDLineEdit"/>
       </item>
      </layout>
     </widget>
@@ -489,11 +454,6 @@ p, li { white-space: pre-wrap; }
    <extends>QWidget</extends>
    <header>ctkCollapsibleButton.h</header>
    <container>1</container>
-  </customwidget>
-  <customwidget>
-   <class>ctkComboBox</class>
-   <extends>QComboBox</extends>
-   <header>ctkComboBox.h</header>
   </customwidget>
   <customwidget>
    <class>ctkDirectoryButton</class>
