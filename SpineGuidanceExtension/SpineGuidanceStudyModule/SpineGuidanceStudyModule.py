@@ -354,6 +354,8 @@ class SpineGuidanceStudyModuleWidget(ScriptedLoadableModuleWidget, VTKObservatio
     else:
       self._parameterNode.SetNodeReferenceID(self.logic.NEEDLE_TO_RAS_TRANSFORM, selectedNode.GetID())
 
+    self.logic.updateParameterNodeFromTransform()
+
     self.logic.updateTransformFromParameterNode()
 
   # Scene selection
@@ -605,8 +607,11 @@ class SpineGuidanceStudyModuleLogic(ScriptedLoadableModuleLogic):
     needleToRasTransform.Translate(float(parameterNode.GetParameter(self.TRANSLATE_R)),
                                    float(parameterNode.GetParameter(self.TRANSLATE_A)),
                                    float(parameterNode.GetParameter(self.TRANSLATE_S)))
-    needleToRasTransform.RotateX(float(parameterNode.GetParameter(self.ROTATE_R)) - 90)  # Start at anterior direction
-    needleToRasTransform.RotateY(float(parameterNode.GetParameter(self.ROTATE_S)))
+    rotationX = float(parameterNode.GetParameter(self.ROTATE_R)) - 90
+    rotationY = float(parameterNode.GetParameter(self.ROTATE_S))
+
+    needleToRasTransform.RotateX(rotationX)  # Start at anterior direction
+    needleToRasTransform.RotateY(rotationY)
 
     # Set the transform to the transform node
 
@@ -615,6 +620,31 @@ class SpineGuidanceStudyModuleLogic(ScriptedLoadableModuleLogic):
       needleToRasTransformNode.SetAndObserveTransformToParent(needleToRasTransform)
     else:
       logging.warning("Needle transform not selected yet")
+
+  def updateParameterNodeFromTransform(self):
+    """
+    Estimate motion parameters from the current transform. This is needed if we want to continue an existing transform
+    that has not been selected previously.
+    """
+    parameterNode = self.getParameterNode()
+
+    needleToRasTransformNode = parameterNode.GetNodeReference(self.NEEDLE_TO_RAS_TRANSFORM)
+    if needleToRasTransformNode is None:
+      return
+
+    needleToRasTransform = needleToRasTransformNode.GetTransformToParent()
+
+    needleToRasTranslation = np.array(needleToRasTransform.GetPosition())
+    parameterNode.SetParameter(self.TRANSLATE_R, str(needleToRasTranslation[0]))
+    parameterNode.SetParameter(self.TRANSLATE_A, str(needleToRasTranslation[1]))
+    parameterNode.SetParameter(self.TRANSLATE_S, str(needleToRasTranslation[2]))
+
+    #todo: This does not correctly preserve orientation. We need to figure out how to get rotation values to be compatible
+    # with updateTransformFromParameterNode()
+
+    needleToRasOrientation = np.array(needleToRasTransform.GetOrientation())
+    parameterNode.SetParameter(self.ROTATE_R, str(needleToRasOrientation[0] + 90))
+    parameterNode.SetParameter(self.ROTATE_S, str(needleToRasOrientation[1]))
 
   def moveNeedleIn(self, distance):
     # Get the parameter node
