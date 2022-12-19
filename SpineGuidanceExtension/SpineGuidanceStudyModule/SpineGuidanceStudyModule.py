@@ -177,7 +177,15 @@ class SpineGuidanceStudyModuleWidget(ScriptedLoadableModuleWidget, VTKObservatio
     self.initializeParameterNode()
     # change to custom double 3D view here
     self.resetViews()
-
+    # If the default volume rendering method is not GPU, show an error message
+    print("Default volume rendering method: " + slicer.modules.volumerendering.logic().GetDefaultRenderingMethod())
+    if slicer.modules.volumerendering.logic().GetDefaultRenderingMethod() != 'vtkMRMLGPURayCastVolumeRenderingDisplayNode':
+      slicer.util.warningDisplay("The default volume rendering method is not GPU. Please change it in the Volume Rendering module.")
+      # Set the default volume rendering method to GPU
+      # The options are "vtkMRMLCPURayCastVolumeRenderingDisplayNode", "vtkMRMLGPURayCastVolumeRenderingDisplayNode", "vtkMRMLMultiVolumeRenderingDisplayNode"
+      # slicer.modules.volumerendering.logic().SetDefaultRenderingMethod("vtkMRMLMultiVolumeRenderingDisplayNode")
+      slicer.modules.volumerendering.logic().SetDefaultRenderingMethod("vtkMRMLGPURayCastVolumeRenderingDisplayNode")
+    
   def exit(self):
     """
     Called each time the user opens a different module.
@@ -320,14 +328,19 @@ class SpineGuidanceStudyModuleWidget(ScriptedLoadableModuleWidget, VTKObservatio
     self.updateWidgetsForCurrentVolume()
 
     # Make sure volume has a volume rendering display node, and display is visible in all 3D views
-
     volumeRenderingLogic = slicer.modules.volumerendering.logic()
     displayNode = volumeRenderingLogic.GetFirstVolumeRenderingDisplayNode(selectedNode)
+    print(displayNode)
     if displayNode is None:
       selectedNode.CreateDefaultDisplayNodes()
-      slicer.modules.volumerendering.logic().CreateDefaultVolumeRenderingNodes(selectedNode)
+      slicer.modules.volumerendering.logic().CreateDefaultVolumeRenderingNodes(selectedNode) 
       displayNode = volumeRenderingLogic.GetFirstVolumeRenderingDisplayNode(selectedNode)
-
+    # Delete the old display node
+    slicer.mrmlScene.RemoveNode(displayNode)
+    # Create a new display node with the settings transfered from the old one
+    selectedNode.CreateDefaultDisplayNodes()
+    slicer.modules.volumerendering.logic().CreateDefaultVolumeRenderingNodes(selectedNode) # ***
+    # The above works to switch to GPU but it also resets the display settings
     displayNode.SetViewNodeIDs([])  # Empty list means all views
 
     self.resetViews()
